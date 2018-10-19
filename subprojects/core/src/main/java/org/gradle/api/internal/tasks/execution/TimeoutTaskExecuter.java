@@ -59,10 +59,10 @@ public class TimeoutTaskExecuter implements TaskExecuter {
         try {
             delegate.execute(task, state, context);
         } finally {
+            Thread.interrupted();
             taskTimeout.stop();
             if (taskTimeout.timedOut()) {
                 state.setAborted(task + " exceeded its timeout");
-                Thread.interrupted();
             }
         }
     }

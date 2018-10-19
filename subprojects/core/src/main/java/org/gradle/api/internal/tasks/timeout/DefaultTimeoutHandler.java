@@ -16,14 +16,25 @@
 
 package org.gradle.api.internal.tasks.timeout;
 
+import org.gradle.api.logging.Logger;
+import org.gradle.api.logging.Logging;
+import org.gradle.internal.UncheckedException;
 import org.gradle.internal.concurrent.ManagedScheduledExecutor;
 import org.gradle.internal.concurrent.Stoppable;
+import org.gradle.internal.jvm.Jvm;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class DefaultTimeoutHandler implements TimeoutHandler, Stoppable {
+    private static final Logger LOGGER = Logging.getLogger(DefaultTimeoutHandler.class);
+
     private final ManagedScheduledExecutor executor;
 
     public DefaultTimeoutHandler(ManagedScheduledExecutor executor) {
@@ -64,7 +75,7 @@ public class DefaultTimeoutHandler implements TimeoutHandler, Stoppable {
 
     private static class InterruptOnTimeout implements Runnable {
         private final Thread thread;
-        private volatile boolean interrupted;
+        private boolean interrupted;
 
         private InterruptOnTimeout(Thread thread) {
             this.thread = thread;
@@ -73,7 +84,31 @@ public class DefaultTimeoutHandler implements TimeoutHandler, Stoppable {
         @Override
         public void run() {
             interrupted = true;
+            collectStacktrackes();
             thread.interrupt();
+        }
+
+        private void collectStacktrackes() {
+            if (!Jvm.current().getJavaVersion().isJava9Compatible()) {
+                return;
+            }
+            try (BufferedWriter out = Files.newBufferedWriter(Paths.get("Users/oehme/Desktop/stacks.txt"), StandardOpenOption.APPEND)) {
+                collectStacksInto(ProcessHandle.current(), out);
+            } catch (Exception e) {
+                LOGGER.error("Could not collect stacktraces for timed out thread " + thread, e);
+            }
+        }
+
+        private void collectStacksInto(ProcessHandle process, BufferedWriter out) {
+            try {
+                String stacks = Jstack.forJvm(Jvm.current()).invoke(process);
+                out.write("Process " + process.pid());
+                out.write(stacks);
+                out.write("\n------------------\n");
+            } catch (Exception e) {
+                throw new IllegalStateException("Failed to collect stack traces for process " + process.pid());
+            }
+            process.children().forEach((child) -> collectStacksInto(child, out));
         }
     }
 }
