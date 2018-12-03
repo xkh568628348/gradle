@@ -33,6 +33,7 @@ import org.gradle.internal.isolation.IsolatableFactory;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 public class DefaultVariantTransformRegistry implements VariantTransformRegistry {
     private static final Object[] NO_PARAMETERS = new Object[0];
@@ -56,7 +57,7 @@ public class DefaultVariantTransformRegistry implements VariantTransformRegistry
         RecordingRegistration reg = instantiatorFactory.decorate().newInstance(RecordingRegistration.class, immutableAttributesFactory);
         registrationAction.execute(reg);
         if (reg.type == null) {
-            throw new VariantTransformConfigurationException("Could not register transform: an ArtifactTransform must be provided.");
+            throw new VariantTransformConfigurationException("Could not register transform: a transformer must be provided.");
         }
         if (reg.to.isEmpty()) {
             throw new VariantTransformConfigurationException("Could not register transform: at least one 'to' attribute must be provided.");
@@ -91,7 +92,7 @@ public class DefaultVariantTransformRegistry implements VariantTransformRegistry
     public static class RecordingRegistration implements VariantTransform {
         final AttributeContainerInternal from;
         final AttributeContainerInternal to;
-        private Class<? extends ArtifactTransform> type;
+        private Class<?> type;
         private Action<? super ActionConfiguration> config;
 
         public RecordingRegistration(ImmutableAttributesFactory immutableAttributesFactory) {
@@ -110,14 +111,17 @@ public class DefaultVariantTransformRegistry implements VariantTransformRegistry
         }
 
         @Override
-        public void artifactTransform(Class<? extends ArtifactTransform> type) {
+        public void artifactTransform(Class<?> type) {
             artifactTransform(type, null);
         }
 
         @Override
-        public void artifactTransform(Class<? extends ArtifactTransform> type, @Nullable Action<? super ActionConfiguration> config) {
+        public void artifactTransform(Class<?> type, @Nullable Action<? super ActionConfiguration> config) {
             if (this.type != null) {
                 throw new VariantTransformConfigurationException("Could not register transform: only one ArtifactTransform may be provided for registration.");
+            }
+            if (!ArtifactTransform.class.isAssignableFrom(type) && !Callable.class.isAssignableFrom(type)) {
+                throw new VariantTransformConfigurationException("Only Callable or ArtifactTransform can be registered as artifact transformations.");
             }
             this.type = type;
             this.config = config;

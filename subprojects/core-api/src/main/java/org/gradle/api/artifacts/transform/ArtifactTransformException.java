@@ -31,11 +31,11 @@ import java.io.File;
 @Contextual
 public class ArtifactTransformException extends GradleException {
 
-    public ArtifactTransformException(File input, AttributeContainer expectedAttributes, Class<? extends ArtifactTransform> transform, Throwable cause) {
+    public ArtifactTransformException(File input, AttributeContainer expectedAttributes, Class<?> transform, Throwable cause) {
         super(format(input, expectedAttributes, transform), cause);
     }
 
-    private static String format(File input, AttributeContainer expectedAttributes, Class<? extends ArtifactTransform> transform) {
+    private static String format(File input, AttributeContainer expectedAttributes, Class<?> transform) {
         return String.format("Failed to transform file '%s' to match attributes %s using transform %s",
             input.getName(), expectedAttributes, ModelType.of(transform).getDisplayName());
     }

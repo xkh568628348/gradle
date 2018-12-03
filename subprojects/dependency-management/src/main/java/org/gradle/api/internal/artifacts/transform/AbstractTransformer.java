@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.gradle.api.internal.artifacts.transform;
 
 import org.gradle.api.InvalidUserDataException;
-import org.gradle.api.artifacts.transform.ArtifactTransform;
 import org.gradle.api.artifacts.transform.ArtifactTransformDependencies;
 import org.gradle.api.internal.InjectUtil;
 import org.gradle.api.internal.InstantiatorFactory;
@@ -32,16 +31,15 @@ import java.io.File;
 import java.lang.reflect.Constructor;
 import java.util.List;
 
-public class DefaultTransformer implements Transformer {
-
-    private final Class<? extends ArtifactTransform> implementationClass;
+public abstract class AbstractTransformer<T> implements Transformer {
+    private final Class<? extends T> implementationClass;
     private final boolean requiresDependencies;
     private final Isolatable<Object[]> parameters;
     private final InstantiatorFactory instantiatorFactory;
     private final HashCode inputsHash;
     private final ImmutableAttributes fromAttributes;
 
-    public DefaultTransformer(Class<? extends ArtifactTransform> implementationClass, Isolatable<Object[]> parameters, HashCode inputsHash, InstantiatorFactory instantiatorFactory, ImmutableAttributes fromAttributes) {
+    public AbstractTransformer(Class<? extends T> implementationClass, Isolatable<Object[]> parameters, HashCode inputsHash, InstantiatorFactory instantiatorFactory, ImmutableAttributes fromAttributes) {
         this.implementationClass = implementationClass;
         this.requiresDependencies = hasDependenciesAmongConstructorParameters(implementationClass);
         this.parameters = parameters;
@@ -50,7 +48,7 @@ public class DefaultTransformer implements Transformer {
         this.fromAttributes = fromAttributes;
     }
 
-    private static boolean hasDependenciesAmongConstructorParameters(Class<? extends ArtifactTransform> implementation) {
+    protected static boolean hasDependenciesAmongConstructorParameters(Class<?> implementation) {
         Constructor<?> constructor = InjectUtil.selectConstructor(implementation);
         for (Class<?> parameterType : constructor.getParameterTypes()) {
             if (ArtifactTransformDependencies.class.equals(parameterType)) {
@@ -69,15 +67,7 @@ public class DefaultTransformer implements Transformer {
         return fromAttributes;
     }
 
-    @Override
-    public List<File> transform(File primaryInput, File outputDir, ArtifactTransformDependencies dependencies) {
-        ArtifactTransform transformer = newTransformer(dependencies);
-        transformer.setOutputDirectory(outputDir);
-        List<File> outputs = transformer.transform(primaryInput);
-        return validateOutputs(primaryInput, outputDir, outputs);
-    }
-
-    private static List<File> validateOutputs(File primaryInput, File outputDir, @Nullable List<File> outputs) {
+    protected static List<File> validateOutputs(File primaryInput, File outputDir, @Nullable List<File> outputs) {
         if (outputs == null) {
             throw new InvalidUserDataException("Transform returned null result.");
         }
@@ -101,7 +91,7 @@ public class DefaultTransformer implements Transformer {
         return outputs;
     }
 
-    private ArtifactTransform newTransformer(ArtifactTransformDependencies artifactTransformDependencies) {
+    protected T newTransformer(ArtifactTransformDependencies artifactTransformDependencies) {
         Instantiator instantiator;
         if (requiresDependencies) {
             DefaultServiceRegistry registry = new DefaultServiceRegistry();
@@ -119,7 +109,7 @@ public class DefaultTransformer implements Transformer {
     }
 
     @Override
-    public Class<? extends ArtifactTransform> getImplementationClass() {
+    public Class<? extends T> getImplementationClass() {
         return implementationClass;
     }
 
@@ -137,7 +127,7 @@ public class DefaultTransformer implements Transformer {
             return false;
         }
 
-        DefaultTransformer that = (DefaultTransformer) o;
+        AbstractTransformer that = (AbstractTransformer) o;
 
         return inputsHash.equals(that.inputsHash);
     }

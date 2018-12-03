@@ -22,6 +22,7 @@ import org.gradle.api.internal.InstantiatorFactory;
 import org.gradle.api.internal.artifacts.VariantTransformRegistry;
 import org.gradle.api.internal.attributes.AttributeContainerInternal;
 import org.gradle.api.internal.attributes.ImmutableAttributes;
+import org.gradle.internal.Cast;
 import org.gradle.internal.classloader.ClassLoaderHierarchyHasher;
 import org.gradle.internal.hash.Hasher;
 import org.gradle.internal.hash.Hashing;
@@ -37,7 +38,7 @@ public class DefaultTransformationRegistration implements VariantTransformRegist
     private final ImmutableAttributes to;
     private final TransformationStep transformationStep;
 
-    public static VariantTransformRegistry.Registration create(ImmutableAttributes from, ImmutableAttributes to, Class<? extends ArtifactTransform> implementation, Object[] params, IsolatableFactory isolatableFactory, ClassLoaderHierarchyHasher classLoaderHierarchyHasher, InstantiatorFactory instantiatorFactory, TransformerInvoker transformerInvoker) {
+    public static VariantTransformRegistry.Registration create(ImmutableAttributes from, ImmutableAttributes to, Class<?> implementation, Object[] params, IsolatableFactory isolatableFactory, ClassLoaderHierarchyHasher classLoaderHierarchyHasher, InstantiatorFactory instantiatorFactory, TransformerInvoker transformerInvoker) {
         Hasher hasher = Hashing.newHasher();
         hasher.putString(implementation.getName());
         hasher.putHash(classLoaderHierarchyHasher.getClassLoaderHash(implementation.getClassLoader()));
@@ -52,7 +53,7 @@ public class DefaultTransformationRegistration implements VariantTransformRegist
 
         paramsSnapshot.appendToHasher(hasher);
 
-        Transformer transformer = new DefaultTransformer(implementation, paramsSnapshot, hasher.hash(), instantiatorFactory, from);
+        Transformer transformer = ArtifactTransform.class.isAssignableFrom(implementation) ? new TransformerFromArtifactTransform(Cast.uncheckedNonnullCast(implementation), paramsSnapshot, hasher.hash(), instantiatorFactory, from) : new TransformerFromCallable(Cast.uncheckedNonnullCast(implementation), paramsSnapshot, hasher.hash(), instantiatorFactory, from);
         return new DefaultTransformationRegistration(from, to, new TransformationStep(transformer, transformerInvoker));
     }
 

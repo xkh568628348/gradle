@@ -33,9 +33,9 @@ import java.io.File;
 public class TransformationException extends GradleException {
 
     private final File input;
-    private final Class<? extends ArtifactTransform> transformerImplementation;
+    private final Class<?> transformerImplementation;
 
-    public TransformationException(File input, Class<? extends ArtifactTransform> transformerImplementation, Throwable cause) {
+    public TransformationException(File input, Class<?> transformerImplementation, Throwable cause) {
         super(format(input, transformerImplementation), cause);
         this.input = input;
         this.transformerImplementation = transformerImplementation;
@@ -45,11 +45,11 @@ public class TransformationException extends GradleException {
         return input;
     }
 
-    public Class<? extends ArtifactTransform> getTransformerImplementation() {
+    public Class<?> getTransformerImplementation() {
         return transformerImplementation;
     }
 
-    private static String format(File input, Class<? extends ArtifactTransform> transform) {
+    private static String format(File input, Class<?> transform) {
         return String.format("Failed to transform file '%s' using transform %s",
             input.getName(), ModelType.of(transform).getDisplayName());
     }

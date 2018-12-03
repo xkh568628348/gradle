@@ -58,17 +58,26 @@ $fileSizer
     }
 
     private static String getFileSizer() {
-        """
-            class FileSizer extends org.gradle.api.artifacts.transform.ArtifactTransform {
+        """                          
+            import org.gradle.api.artifacts.transform.PrimaryInput
+            import org.gradle.api.artifacts.transform.Workspace
+            import java.util.concurrent.Callable
+            
+            class FileSizer implements Callable<List<File>> {
                 FileSizer() {
                     println "Creating FileSizer"
                 }
                 
-                List<File> transform(File input) {
-                    assert outputDirectory.directory && outputDirectory.list().length == 0
-                    def output = new File(outputDirectory, input.name + ".txt")
-                    println "Transforming \${input.name} to \${output.name}"
-                    output.text = String.valueOf(input.length())
+                @PrimaryInput
+                File primaryInput
+                @Workspace
+                File workspace
+                
+                List<File> call() {
+                    assert workspace.directory && workspace.list().length == 0
+                    def output = new File(workspace, primaryInput.name + ".txt")
+                    println "Transforming \${primaryInput.name} to \${output.name}"
+                    output.text = String.valueOf(primaryInput.length())
                     return [output]
                 }
             }
