@@ -50,7 +50,7 @@ public class FactoryNamedDomainObjectContainer<T> extends AbstractNamedDomainObj
      * @param collectionCallbackActionDecorator the decorator for collection callback action execution
      */
     public FactoryNamedDomainObjectContainer(Class<T> type, Instantiator instantiator, Namer<? super T> namer, MutationGuard crossProjectConfiguratorMutationGuard, CollectionCallbackActionDecorator collectionCallbackActionDecorator) {
-        this(type, instantiator, namer, new ReflectiveNamedDomainObjectFactory<T>(type), crossProjectConfiguratorMutationGuard, collectionCallbackActionDecorator);
+        this(type, instantiator, namer, new ReflectiveNamedDomainObjectFactory<T>(type, instantiator), crossProjectConfiguratorMutationGuard, collectionCallbackActionDecorator);
     }
 
     /**

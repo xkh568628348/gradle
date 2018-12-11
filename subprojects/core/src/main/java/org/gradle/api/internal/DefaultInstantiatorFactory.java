@@ -29,7 +29,6 @@ import java.lang.reflect.Constructor;
 import java.util.List;
 
 public class DefaultInstantiatorFactory implements InstantiatorFactory {
-    private final ClassGenerator classGenerator;
     private final Instantiator decoratingInstantiator;
     private final Instantiator undecoraredInjectingInstantiator;
     private final ConstructorSelector undecoratedJsr330Selector;
@@ -37,7 +36,6 @@ public class DefaultInstantiatorFactory implements InstantiatorFactory {
     private final ConstructorSelector decoratedLenientSelector;
 
     public DefaultInstantiatorFactory(ClassGenerator classGenerator, CrossBuildInMemoryCacheFactory cacheFactory) {
-        this.classGenerator = classGenerator;
         this.decoratingInstantiator = new ClassGeneratorBackedInstantiator(classGenerator, DirectInstantiator.INSTANCE);
         ServiceRegistry noServices = new DefaultServiceRegistry();
         ClassGenerator undecorated = new ClassGenerator() {
